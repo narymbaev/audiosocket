@@ -3,6 +3,7 @@ import socket
 from threading import Thread
 from dataclasses import dataclass
 from time import sleep
+import websockets
 
 from connection import *
 
@@ -23,7 +24,7 @@ class audioop_struct:
 
 # Creates a new audiosocket object
 class Audiosocket:
-  def __init__(self, bind_info, timeout=None):
+  def __init__(self, bind_info, websocket_info, timeout=None):
 
     # By default, features of audioop (for example: resampling
     # or re-mixng input/output) are disabled
@@ -34,6 +35,10 @@ class Audiosocket:
     if not isinstance(bind_info, tuple):
       raise TypeError("Expected tuple (addr, port), received", type(bind_info))
 
+    if not isinstance(websocket_info, tuple):
+      raise TypeError("Expected tuple (addr, port), received", type(websocket_info))
+
+    self.ws_address, self.ws_port = websocket_info
 
     self.addr, self.port = bind_info
 
@@ -71,22 +76,30 @@ class Audiosocket:
       ratecv_state = None,
     )
 
+  async def websocket_init(self):
+    ws = await websockets.connect(self.ws_address+self.ws_port)
+    return ws
 
 
-  def listen(self):
+
+  async def listen(self):
 
     conn, peer_addr = self.initial_sock.accept()
-    connection = Connection(
-      conn,
-      peer_addr,
-      self.user_resample,
-      self.asterisk_resample,
-    )
 
-    connection_thread = Thread(target=connection._process, args=())
-    connection_thread.start()
+    async with websockets.connect(f'ws://{self.ws_address}:{self.ws_port}') as websocket:
 
-    return connection
+      connection = Connection(
+        conn,
+        peer_addr,
+        self.user_resample,
+        self.asterisk_resample,
+        websocket
+      )
+
+      connection_thread = Thread(target=connection._process, args=())
+      connection_thread.start()
+
+      return connection
 
     # *** If we want this single object to serve multiple simultaneous connections, accept() will have to be put in a while loop
     # If this does become the case, what is the best way to deliver the queue objects to the caller, keep them wrapped in read/write methods?

@@ -48,7 +48,7 @@ errors = errors_struct()
 
 class Connection:
 
-  def __init__(self, conn, peer_addr, user_resample, asterisk_resample):
+  def __init__(self, conn, peer_addr, user_resample, asterisk_resample, websocket):
 
     self.conn = conn
     self.peer_addr = peer_addr
@@ -56,10 +56,11 @@ class Connection:
     self.connected = True  # An instance  gets created because a connection occurred
     self._user_resample = user_resample
     self._asterisk_resample = asterisk_resample
+    self.websocket = websocket
 
     # Underlying Queue objects for passing incoming/outgoing audio between threads
-    self._rx_q = Queue(500)
-    self._tx_q = Queue(500)
+    self._rx_q = Queue(2000)
+    self._tx_q = Queue(2000)
   
     self._lock = Lock()
 
@@ -99,7 +100,7 @@ class Connection:
 
 
   # Gets AudioSocket audio from the rx queue
-  def read(self):
+  async def read(self):
 
     try:
       audio = self._rx_q.get(timeout=0.2)
@@ -140,7 +141,15 @@ class Connection:
       if self._asterisk_resample.channels == 2:
         audio = audioop.tostereo(audio, 2, 1, 1)
 
-    return audio
+    # Process audio
+    await self.websocket.send(audio)
+
+    audio_output = await self.websocket.recv()
+
+    print(f"Received audio {len(audio_output)}")
+
+    return audio_output
+    # return audio
 
 
 
