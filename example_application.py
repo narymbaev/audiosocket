@@ -13,7 +13,7 @@ async def main():
   audiosocket = Audiosocket(("127.0.0.1", 9092), ("127.0.0.1", 8765))
 
   # This will block until a connection is received
-  conn = audiosocket.listen()
+  conn = await audiosocket.listen()
 
   print('Received connection from {0}'.format(conn.peer_addr))
 
