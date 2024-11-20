@@ -104,13 +104,16 @@ class Connection:
     try:
       audio = self._rx_q.get(timeout=0.2)
 
+      while len(audio) < 8192:
+        audio += self._rx_q.get(timeout=0.2)
+
       # If for some reason we receive less than 320 bytes
       # of audio, add silence (padding) to the end. This prevents
       # audioop related errors that are caused by the current frame
       # not being the same size as the last
-      print(f"READ {len(audio)}")
-      if len(audio) != 8192:
-        audio += bytes(8192 - len(audio))
+      # print(f"READ {len(audio)}")
+      # if len(audio) != 8192:
+      #   audio += bytes(8192 - len(audio))
 
     except Empty:
       print('[AUDIOSOCKET ERROR] Read timeout')
