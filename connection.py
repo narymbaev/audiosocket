@@ -109,8 +109,8 @@ class Connection:
       # audioop related errors that are caused by the current frame
       # not being the same size as the last
       print(f"READ {len(audio)}")
-      if len(audio) != 320:
-        audio += bytes(320 - len(audio))
+      if len(audio) != 8192:
+        audio += bytes(8192 - len(audio))
 
     except Empty:
       print('[AUDIOSOCKET ERROR] Read timeout')
