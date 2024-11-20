@@ -58,8 +58,8 @@ class Connection:
     self._asterisk_resample = asterisk_resample
 
     # Underlying Queue objects for passing incoming/outgoing audio between threads
-    self._rx_q = Queue(2000)
-    self._tx_q = Queue(2000)
+    self._rx_q = Queue(80000)
+    self._tx_q = Queue(80000)
   
     self._lock = Lock()
 
@@ -256,7 +256,7 @@ class Connection:
           # If the audio data to send is larger than this, then
           # it's probably in the wrong format to begin with and wont be
           # played back properly even when sliced.
-          audio_data = self._tx_q.get()[:320]
+          audio_data = self._tx_q.get()[:8192]
 
           with self._lock:
             self.conn.send(types.audio + len(audio_data).to_bytes(2, 'big') + audio_data)
